@@ -1,0 +1,5 @@
+npm error Missing script: "clean"
+npm error
+npm error To see a list of scripts, run:
+npm error   npm run
+npm error A complete log of this run can be found in: C:\Users\PL\AppData\Local\npm-cache\_logs\2026-02-01T10_52_13_892Z-debug-0.log
