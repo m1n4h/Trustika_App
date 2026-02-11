@@ -11,103 +11,74 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTheme } from "../lib/ThemeContext";
+import { apiGet } from "../lib/api";
 
-const MENU_ITEMS = [
-  {
-    id: 1,
-    category: "Starters",
-    items: [
-      {
-        id: 101,
-        name: "Crispy Spring Rolls",
-        description: "4 pieces with sweet chili dipping sauce and fresh mint.",
-        price: "16,000 TSh",
-        image: "🥟",
-      },
-      {
-        id: 102,
-        name: "Truffle Parm Fries",
-        description: "Golden fries tossed in truffle oil and aged parmesan.",
-        price: "22,000 TSh",
-        image: "🍟",
-      },
-    ],
-  },
-  {
-    id: 2,
-    category: "Main Course",
-    items: [
-      {
-        id: 201,
-        name: "Avocado Zinger Burger",
-        description: "Spicy chicken, fresh avocado, brioche bun, house sauce.",
-        price: "32,000 TSh",
-        image: "🍔",
-      },
-      {
-        id: 202,
-        name: "Grilled Salmon Fillet",
-        description: "Fresh Atlantic salmon with lemon butter and herbs.",
-        price: "47,000 TSh",
-        image: "🐟",
-      },
-    ],
-  },
-  {
-    id: 3,
-    category: "Desserts",
-    items: [
-      {
-        id: 301,
-        name: "Chocolate Lava Cake",
-        description: "Warm chocolate cake with molten center and vanilla ice cream.",
-        price: "20,000 TSh",
-        image: "🍰",
-      },
-      {
-        id: 302,
-        name: "Berry Cheesecake",
-        description: "NY style cheesecake with fresh mixed berries.",
-        price: "21,000 TSh",
-        image: "🍪",
-      },
-    ],
-  },
-  {
-    id: 4,
-    category: "Beverages",
-    items: [
-      {
-        id: 401,
-        name: "Fresh Orange Juice",
-        description: "Freshly squeezed orange juice.",
-        price: "12,000 TSh",
-        image: "🧃",
-      },
-      {
-        id: 402,
-        name: "Iced Coffee",
-        description: "Cold brew coffee with ice and milk.",
-        price: "14,000 TSh",
-        image: "☕",
-      },
-    ],
-  },
-];
+type Vendor = {
+  _id: string;
+  name: string;
+  description?: string;
+  rating?: number;
+};
+
+type MenuItem = {
+  _id: string;
+  category?: string;
+  name: string;
+  description?: string;
+  basePrice: number;
+};
 
 export default function RestaurantDetailScreen() {
   const router = useRouter();
   const { isDarkMode, colors } = useTheme();
   const params = useLocalSearchParams();
-  const restaurant = params ? JSON.parse(params.restaurant as string) : null;
+  const vendorId = params?.restaurantId as string | undefined;
 
-  const [selectedCategory, setSelectedCategory] = useState("Starters");
+  const [restaurant, setRestaurant] = useState<Vendor | null>(null);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [cart, setCart] = useState<any[]>([]);
   const [deliveryLocation, setDeliveryLocation] = useState("123 Green Valley Ave");
 
-  const currentCategoryItems = MENU_ITEMS.find(
-    (cat) => cat.category === selectedCategory
-  )?.items || [];
+  const categories = Array.from(
+    new Set(menuItems.map((item) => item.category || "Menu")),
+  );
+
+  const currentCategoryItems = menuItems.filter(
+    (item) => (item.category || "Menu") === (selectedCategory || categories[0]),
+  );
+
+  React.useEffect(() => {
+    if (!vendorId) return;
+
+    (async () => {
+      try {
+        const vendorRes = await apiGet<{ ok: boolean; vendor: Vendor }>(
+          `/api/v1/vendors/${vendorId}`,
+        );
+        if (vendorRes.ok) {
+          setRestaurant(vendorRes.vendor);
+        }
+      } catch (e) {
+        console.log("Failed to load vendor details", e);
+      }
+
+      try {
+        const menuRes = await apiGet<{ ok: boolean; items: MenuItem[] }>(
+          `/api/v1/menu/vendor/${vendorId}`,
+        );
+        if (menuRes.ok) {
+          setMenuItems(menuRes.items);
+          if (menuRes.items.length > 0 && !selectedCategory) {
+            setSelectedCategory(menuRes.items[0].category || "Menu");
+          }
+        }
+      } catch (e) {
+        console.log("Failed to load menu", e);
+      }
+    })();
+  }, [vendorId]);
 
   const addToCart = (item: any) => {
     const existingItem = cart.find((cartItem) => cartItem.id === item.id);
@@ -125,7 +96,7 @@ export default function RestaurantDetailScreen() {
   };
 
   const cartTotal = cart.reduce((sum, item) => {
-    const price = parseFloat(item.price.replace(/[^0-9]/g, ""));
+    const price = Number(item.basePrice || item.price || 0);
     return sum + price * item.quantity;
   }, 0);
 
@@ -189,17 +160,17 @@ export default function RestaurantDetailScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoriesTabs}
           >
-            {MENU_ITEMS.map((category) => (
+            {categories.map((category) => (
               <TouchableOpacity
-                key={category.id}
+                  key={category}
                 style={[
                   styles.categoryTab,
                   {
                     borderBottomColor:
-                      selectedCategory === category.category ? "#2bee6c" : "transparent",
+                      selectedCategory === category ? "#2bee6c" : "transparent",
                   },
                 ]}
-                onPress={() => setSelectedCategory(category.category)}
+                onPress={() => setSelectedCategory(category)}
               >
                 <Text
                   style={[
@@ -214,7 +185,7 @@ export default function RestaurantDetailScreen() {
                     },
                   ]}
                 >
-                  {category.category}
+                  {category}
                 </Text>
               </TouchableOpacity>
             ))}

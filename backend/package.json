@@ -1,0 +1,31 @@
+{
+  "name": "trustika-backend",
+  "version": "0.1.0",
+  "description": "Trustika API server (Node.js, Express, MongoDB, Firebase, Amplitude) inspired by Enatega multivendor architecture.",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "lint": "echo \"No linter configured for backend yet\""
+  },
+  "engines": {
+    "node": ">=18 <22"
+  },
+  "dependencies": {
+    "@amplitude/analytics-node": "^1.3.1",
+    "@sentry/node": "^8.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.19.2",
+    "firebase-admin": "^12.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.8.0",
+    "morgan": "^1.10.0",
+    "nodemailer": "^8.0.1",
+    "paypal-rest-sdk": "^1.8.1",
+    "stripe": "^16.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  }
+}

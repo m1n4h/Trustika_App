@@ -9,10 +9,11 @@ import {
   Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTheme } from "../../lib/ThemeContext";
 import * as Location from "expo-location";
+import { MaterialIcons } from "@expo/vector-icons";
+import { apiGet } from "../../lib/api";
 
 const CATEGORIES = [
   { id: 1, name: "All", icon: "dashboard" },
@@ -22,42 +23,18 @@ const CATEGORIES = [
   { id: 5, name: "Salads", icon: "local-florist" },
 ];
 
-const RESTAURANTS = [
-  {
-    id: 1,
-    name: "Green Garden Bistro",
-    description: "Signature Green Salad & Healthy Bowls",
-    rating: 4.8,
-    distance: 1.2,
-    delivery: 1.99,
-    badge: "Popular",
-    image: "🥗",
-  },
-  {
-    id: 2,
-    name: "The Urban Grill",
-    description: "Premium grilled steaks and artisanal burgers",
-    rating: 4.5,
-    distance: 0.8,
-    delivery: 0,
-    badge: "Free Delivery",
-    image: "🍖",
-  },
-  {
-    id: 3,
-    name: "Sushi Zen",
-    description: "Traditional Japanese & Modern Rolls",
-    rating: 4.9,
-    distance: 2.5,
-    delivery: 2.5,
-    badge: "Top Rated",
-    image: "🍣",
-  },
-];
+type Vendor = {
+  _id: string;
+  name: string;
+  description?: string;
+  rating?: number;
+  minOrderAmount?: number;
+};
 
 export default function FoodScreen() {
   const router = useRouter();
   const { isDarkMode, colors } = useTheme();
+  const [restaurants, setRestaurants] = useState<Vendor[]>([]);
   const [selectedCategory, setSelectedCategory] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [userLocation, setUserLocation] = useState<string>("Loading location...");
@@ -66,9 +43,9 @@ export default function FoodScreen() {
   const [editedLocation, setEditedLocation] = useState(userLocation);
   const [notifications, setNotifications] = useState([]);
 
-  const filteredRestaurants = RESTAURANTS.filter((restaurant) =>
+  const filteredRestaurants = restaurants.filter((restaurant) =>
     restaurant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    restaurant.description.toLowerCase().includes(searchQuery.toLowerCase())
+    (restaurant.description || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   useEffect(() => {
@@ -103,6 +80,18 @@ export default function FoodScreen() {
           setUserLocation(address);
         } else {
           setUserLocation("Address not found");
+        }
+
+        // Load nearby restaurants from backend
+        try {
+          const response = await apiGet<{ ok: boolean; vendors: Vendor[] }>(
+            `/api/v1/vendors?type=restaurant&lat=${location.coords.latitude}&lng=${location.coords.longitude}`,
+          );
+          if (response.ok) {
+            setRestaurants(response.vendors);
+          }
+        } catch (e) {
+          console.log("Failed to load vendors from API, using empty list");
         }
       } catch (error) {
         console.log("Location error:", error);
@@ -283,7 +272,7 @@ export default function FoodScreen() {
             {filteredRestaurants.length > 0 ? (
               filteredRestaurants.map((restaurant) => (
               <TouchableOpacity
-                key={restaurant.id}
+                key={restaurant._id}
                 style={[
                   styles.restaurantCard,
                   {
@@ -294,7 +283,7 @@ export default function FoodScreen() {
                 onPress={() => {
                   router.push({
                     pathname: "/restaurant-detail",
-                    params: { restaurant: JSON.stringify(restaurant) },
+                    params: { restaurantId: restaurant._id },
                   });
                 }}
               >

@@ -1,0 +1,34 @@
+const express = require('express');
+const Order = require('../models/Order');
+
+const router = express.Router();
+
+// Look up order by tracking code (used by tracking screen).
+// Auth is optional for now.
+router.get('/:trackingCode', async (req, res, next) => {
+  try {
+    const { trackingCode } = req.params;
+    const order = await Order.findOne({ trackingCode });
+    if (!order) {
+      return res
+        .status(404)
+        .json({ error: true, message: 'Tracking code not found' });
+    }
+
+    // For now, we only return basic status. In a full implementation, this
+    // would include rider location and timeline events.
+    return res.json({
+      ok: true,
+      tracking: {
+        trackingCode: order.trackingCode,
+        status: order.status,
+        updatedAt: order.updatedAt,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+module.exports = router;
+

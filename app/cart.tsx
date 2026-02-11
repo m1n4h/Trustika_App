@@ -12,6 +12,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTheme } from "../lib/ThemeContext";
 import * as Location from "expo-location";
+import { apiPost } from "../lib/api";
 
 const DELIVERY_FEE = 5000;
 
@@ -25,6 +26,7 @@ export default function CartScreen() {
   const [editLocationVisible, setEditLocationVisible] = useState(false);
   const [editedLocation, setEditedLocation] = useState(deliveryLocation);
   const [cartItems, setCartItems] = useState(cartData);
+  const [submitting, setSubmitting] = useState(false);
 
   // Fetch GPS location on component mount
   useEffect(() => {
@@ -66,7 +68,11 @@ export default function CartScreen() {
   }, []);
 
   const subtotal = cartItems.reduce((sum, item) => {
-    const price = parseFloat(item.price.replace(/[^0-9]/g, ""));
+    const numericPrice =
+      typeof item.basePrice === "number"
+        ? item.basePrice
+        : parseFloat(String(item.price).replace(/[^0-9]/g, ""));
+    const price = Number.isFinite(numericPrice) ? numericPrice : 0;
     return sum + price * item.quantity;
   }, 0);
 
@@ -271,17 +277,48 @@ export default function CartScreen() {
           <SafeAreaView edges={["bottom"]} style={styles.buttonContainer}>
             <TouchableOpacity
               style={styles.placeOrderButton}
-              onPress={() => {
-                // Generate a random order number
-                const orderNumber = `#TF-${Math.floor(Math.random() * 100000).toString().padStart(5, "0")}-${String.fromCharCode(65 + Math.floor(Math.random() * 26))}`;
-                router.push({
-                  pathname: "/order-success",
-                  params: {
-                    restaurantName: "Trustika Kitchen",
-                    estimatedTime: "25-35",
-                    orderNumber: orderNumber,
-                  },
-                });
+              disabled={submitting}
+              onPress={async () => {
+                try {
+                  setSubmitting(true);
+                  const response = await apiPost<{ ok: boolean; order: any }>(
+                    "/api/v1/orders",
+                    {
+                      vendorId: params.vendorId,
+                      items: cartItems.map((item: any) => ({
+                        menuItemId: item._id,
+                        name: item.name,
+                        quantity: item.quantity,
+                        basePrice:
+                          typeof item.basePrice === "number"
+                            ? item.basePrice
+                            : parseFloat(String(item.price).replace(/[^0-9]/g, "")) || 0,
+                      })),
+                      deliveryAddress: {
+                        line1: deliveryLocation,
+                      },
+                      paymentProvider: "cash",
+                    },
+                  );
+
+                  if (response.ok) {
+                    router.push({
+                      pathname: "/order-success",
+                      params: {
+                        restaurantName: "Trustika Kitchen",
+                        estimatedTime: "25-35",
+                        orderNumber: response.order.orderNumber,
+                      },
+                    });
+                  } else {
+                    alert("Order failed, please try again.");
+                  }
+                } catch (e) {
+                  console.log("Order failed", e);
+                  alert("Order failed, please try again.");
+                } finally {
+                  setSubmitting(false);
+                }
               }}
             >
               <MaterialIcons name="shopping-cart" size={24} color="#000" />

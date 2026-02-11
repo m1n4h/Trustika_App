@@ -48,3 +48,20 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+
+
+
+
+
+###########################################################
+
+EXPO_PUBLIC_API_BASE_URL=http://localhost:4000
+
+admin run in port 5173
+
+
+testing end point
+http://localhost:4001/api/v1/vendors
+http://localhost:4001/api/v1/health
+http://localhost:4001/api/v1/auth/me
