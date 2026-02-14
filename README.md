@@ -65,3 +65,34 @@ testing end point
 http://localhost:4001/api/v1/vendors
 http://localhost:4001/api/v1/health
 http://localhost:4001/api/v1/auth/me
+
+
+
+
+
+# TO INSTALL MONGODB FOLLOW THIS LINK DOCOMENTATION
+https://www.mongodb.com/docs/v7.0/tutorial/install-mongodb-on-ubuntu/#std-label-install-mdb-community-ubuntu
+
+
+# start mongodb
+sudo systemctl start mongod
+# once it failed  enter this command 
+sudo systemctl daemon-reload
+# verify if started successful
+sudo systemctl status mongod
+# stop mongoDB
+sudo systemctl stop mongod
+# restart mongoDB
+sudo systemctl restart mongod
+# begin using MongoDB
+mongosh
+
+# user
+db.admins.insertOne({
+  email: "admin@example.com",
+  password: "$2b$10$CwTycUXWue0Thq9StjUM0uJ8pJbB7fE3QEzXHV8Tz6cXLZGvT6oWy", 
+  // This is "trustika12@45" hashed with bcrypt
+  name: "Trustika Admin",
+  role: "admin",
+  createdAt: new Date()
+})

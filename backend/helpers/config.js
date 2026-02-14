@@ -41,7 +41,7 @@ const apiConfig = {
   env: NODE_ENV || 'development',
   port: Number(API_PORT) || 4001,
   baseUrl: API_BASE_URL || 'http://localhost:4001',
-  corsOrigins: (CORS_ORIGINS || 'http://localhost:19006,http://localhost:3000')
+  corsOrigins: (CORS_ORIGINS || 'http://localhost:5173,http://localhost:3000,http://localhost:19006')
     .split(',')
     .map((x) => x.trim())
     .filter(Boolean),
